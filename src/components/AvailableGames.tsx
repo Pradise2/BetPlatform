@@ -13,6 +13,7 @@ const AvailableGames: React.FC = () => {
     const fetchGames = async () => {
       setLoading(true);
       const gameIdCounter = await getGameIdCounter();
+      console.log('gameId',gameIdCounter);
       const gamePromises = [];
 
       if (gameIdCounter !== undefined) {
