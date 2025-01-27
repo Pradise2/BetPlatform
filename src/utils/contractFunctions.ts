@@ -148,19 +148,30 @@ export const getGameDetails = async (gameId: number) => {
   }
 };
 
-// Function to get the current game ID counter
 export const getGameIdCounter = async () => {
   try {
+    
     const { contract } = await setupContractWithSigner();
+    if (!contract || typeof contract.gameIdCounter !== 'function') {
+      throw new Error('Invalid contract or gameIdCounter method not found');
+    }
+
     const count = await contract.gameIdCounter();
-    console.log('Current game ID counter:', count);
+    console.log('Raw gameIdCounter value from contract:', count);
+
+    if (!count || isNaN(Number(count))) {
+      throw new Error(`Invalid gameIdCounter value: ${count}`);
+    }
+
     const counter = Number(count);
-    console.log('Current game ID counter:', counter);
+    console.log('Current game ID counter (parsed):', counter);
     return counter;
   } catch (error) {
-    console.error('Error fetching game ID counter:', error);
+    console.error('Error fetching game ID counter:', error.message, error.stack);
+    return undefined; // Ensure the function returns undefined on error
   }
 };
+
 
 // Function to get the treasury address
 export const getTreasuryAddress = async () => {
