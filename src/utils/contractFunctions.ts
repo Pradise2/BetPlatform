@@ -2,29 +2,34 @@ import { ethers } from 'ethers';
 import { PVP_FLIP_GAME_ABI, PVP_FLIP_GAME_ADDRESS } from '../contracts/PVPFlipGameContract';
 
 export const SUPPORTED_TOKENS = {
-  ETH: '0x0000000000000000000000000000000000000000',  // ETH token address
-  USDC: '0x0000000000000000000000000000000000000000',  // USDC token address
-  USDT: '0x0000000000000000000000000000000000000000',  // USDT token address
-  Token: '0x54939A9F8084b6D3362BD987dE7E0CD2e96462DC',   // Custom token address
+  ETH: '0x0000000000000000000000000000000000000000',
+  USDC: '0x0000000000000000000000000000000000000000',
+  USDT: '0x0000000000000000000000000000000000000000',
+  Token: '0x54939A9F8084b6D3362BD987dE7E0CD2e96462DC',
 };
 
 // Set up provider and contract for public access (read-only)
 const publicProvider = new ethers.JsonRpcProvider('https://base-mainnet.infura.io/v3/b17a040a14bc48cfb3928a73d26f3617');
 const publicContract = new ethers.Contract(PVP_FLIP_GAME_ADDRESS, PVP_FLIP_GAME_ABI, publicProvider);
 
-// Set up provider and contract for functions that require wallet connection
-const provider = new ethers.BrowserProvider(window.ethereum);
-const signer = await provider.getSigner();
-const contract = new ethers.Contract(PVP_FLIP_GAME_ADDRESS, PVP_FLIP_GAME_ABI, signer);
-
-// Function to create a new game
-export const createGame = async (tokenAddress: string, betAmount: string) => {
+// Function to set up signer and contract for wallet interaction
+async function setupContractWithSigner() {
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
     const contract = new ethers.Contract(PVP_FLIP_GAME_ADDRESS, PVP_FLIP_GAME_ABI, signer);
+    return { signer, contract };
+  } catch (error) {
+    console.error('Error setting up contract with signer:', error);
+    throw error;
+  }
+}
 
-    // Log the parameters
+// Function to create a new game
+export const createGame = async (tokenAddress: string, betAmount: string) => {
+  try {
+    const { signer, contract } = await setupContractWithSigner();
+
     console.log('Creating game with amount:', betAmount, 'and token address:', tokenAddress);
 
     // Create token contract instance
@@ -33,23 +38,15 @@ export const createGame = async (tokenAddress: string, betAmount: string) => {
       'function balanceOf(address owner) public view returns (uint256)',
     ], signer);
 
-    console.log('Token contract:', tokenContract);
-  // Convert betAmount to the correct token decimals (18 decimals)
-  const betAmountInWei = ethers.parseUnits(betAmount, 18);
+    // Convert betAmount to the correct token decimals (18 decimals)
+    const betAmountInWei = ethers.parseUnits(betAmount, 18);
 
-  console.log('Bet amount in Wei:', betAmountInWei.toString());
-
-  console.log("Token Contract Address:", tokenContract.address);
-console.log("Token Contract ABI:", tokenContract.interface.fragments);
-
-console.log('Token addrees:', tokenAddress);
-  // Step 1: Check Player 1's balance to make sure they have enough tokens
-  const balance = await tokenContract.balanceOf(await signer.getAddress());
-  console.log('Player balance:', balance.toString());  // Log the balance to check if it returns a BigInt
-  if (balance < betAmountInWei) {
-    console.error('Not enough tokens to create game');
-    return;
-  }
+    // Step 1: Check Player 1's balance to make sure they have enough tokens
+    const balance = await tokenContract.balanceOf(await signer.getAddress());
+    if (balance.lt(betAmountInWei)) {
+      console.error('Not enough tokens to create game');
+      return;
+    }
 
     // Step 2: Approve the contract to spend the tokens
     const approveTx = await tokenContract.approve(PVP_FLIP_GAME_ADDRESS, betAmountInWei);
@@ -62,29 +59,18 @@ console.log('Token addrees:', tokenAddress);
     console.log('Game created successfully:', tx);
   } catch (error) {
     console.error('Error creating game:', error);
-    if (error.code === 'CALL_EXCEPTION') {
-      console.error('Transaction data:', error.transaction);
-      if (error.revert) {
-        console.error('Revert reason:', error.revert);
-      }
-    } else if (error.code === 'ACTION_REJECTED') {
-      console.error('User rejected the action:', error);
-    } else {
-      console.error('Unexpected error:', error);
-    }
+    handleContractError(error);
   }
 };
-
- 
 
 // Function to join an existing game
 export const joinGame = async (gameId: number, betAmount: string) => {
   try {
-    // Fetch the game details
+    const { signer, contract } = await setupContractWithSigner();
     const game = await contract.games(gameId);
-    
-    // Convert the bet amount to the same decimal units as the token (e.g., 18 decimals for ERC20 tokens)
-    const betAmountInUnits = ethers.parseUnits(betAmount, 18); // Assuming the bet amount uses 18 decimals
+
+    // Convert the bet amount to the same decimal units as the token (18 decimals for ERC20 tokens)
+    const betAmountInUnits = ethers.parseUnits(betAmount, 18);
 
     // Check if the provided bet amount matches the one set by Player 1
     if (betAmountInUnits.toString() !== game.betAmount.toString()) {
@@ -96,32 +82,46 @@ export const joinGame = async (gameId: number, betAmount: string) => {
       'function approve(address spender, uint256 amount) public returns (bool)',
       'function balanceOf(address owner) public view returns (uint256)',
     ], signer);
- // Step 1: Check Player 2's balance to make sure they have enough tokens
- const balance = await tokenContract.balanceOf(await signer.getAddress());
- console.log('Player balance:', balance.toString());  // Log the balance to check if it returns a BigInt
- if (balance < betAmountInUnits) {
-   throw new Error('Not enough tokens to join game');
- }
 
- // Step 2: Approve the contract to spend the tokens
- const approveTx = await tokenContract.approve(PVP_FLIP_GAME_ADDRESS, betAmountInUnits);
- await approveTx.wait();
- console.log('Token approved successfully.');
+    // Step 1: Check Player 2's balance to make sure they have enough tokens
+    const balance = await tokenContract.balanceOf(await signer.getAddress());
+    if (balance.lt(betAmountInUnits)) {
+      throw new Error('Not enough tokens to join game');
+    }
 
- // Step 3: Proceed with the transaction if the bet amounts match
- const tx = await contract.joinGame(gameId, betAmountInUnits);
- await tx.wait();
- console.log('Game joined successfully');
-} catch (error) {
- console.error('Error joining game:', error);
-}
+    // Step 2: Approve the contract to spend the tokens
+    const approveTx = await tokenContract.approve(PVP_FLIP_GAME_ADDRESS, betAmountInUnits);
+    await approveTx.wait();
+    console.log('Token approved successfully.');
+
+    // Step 3: Proceed with the transaction if the bet amounts match
+    const tx = await contract.joinGame(gameId, betAmountInUnits);
+    await tx.wait();
+    console.log('Game joined successfully');
+  } catch (error) {
+    console.error('Error joining game:', error);
+    handleContractError(error);
+  }
 };
 
-
+// Function to handle contract errors with additional info
+function handleContractError(error) {
+  if (error.code === 'CALL_EXCEPTION') {
+    console.error('Transaction data:', error.transaction);
+    if (error.revert) {
+      console.error('Revert reason:', error.revert);
+    }
+  } else if (error.code === 'ACTION_REJECTED') {
+    console.error('User rejected the action:', error);
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
 
 // Function to get supported tokens
 export const getSupportedTokens = async () => {
   try {
+    const { contract } = await setupContractWithSigner();
     const tokens = await contract.getSupportedTokens();
     console.log('Supported tokens:', tokens);
     return tokens;
@@ -151,6 +151,7 @@ export const getGameDetails = async (gameId: number) => {
 // Function to get the current game ID counter
 export const getGameIdCounter = async () => {
   try {
+    const { contract } = await setupContractWithSigner();
     const counter = await contract.gameIdCounter();
     console.log('Current game ID counter:', counter);
     return counter;
@@ -162,6 +163,7 @@ export const getGameIdCounter = async () => {
 // Function to get the treasury address
 export const getTreasuryAddress = async () => {
   try {
+    const { contract } = await setupContractWithSigner();
     const address = await contract.treasury();
     console.log('Treasury address:', address);
     return address;

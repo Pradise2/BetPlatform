@@ -40,11 +40,12 @@ const JoinGame: React.FC = () => {
   });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingGameDetails, setIsFetchingGameDetails] = useState(false);
 
   useEffect(() => {
     const fetchGameDetails = async () => {
       if (gameId !== null) {
-        setIsLoading(true);
+        setIsFetchingGameDetails(true);
         const details = await getGameDetails(gameId);
         if (details) {
           setGameDetails(details);
@@ -52,7 +53,7 @@ const JoinGame: React.FC = () => {
         } else {
           setError('Error fetching game details');
         }
-        setIsLoading(false);
+        setIsFetchingGameDetails(false);
       }
     };
 
@@ -145,10 +146,10 @@ const JoinGame: React.FC = () => {
           {/* Join Game Button */}
           <button
             onClick={handleJoinGame}
-            disabled={isLoading}
+            disabled={isLoading || isFetchingGameDetails}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-lg font-medium transition-all hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? (
+            {isLoading || isFetchingGameDetails ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
