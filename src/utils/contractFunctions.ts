@@ -154,7 +154,6 @@ export const getGameIdCounter = async () => {
     const { contract } = await setupContractWithSigner();
     const count = await contract.gameIdCounter();
     console.log('Current game ID counter:', count);
-
     const counter = Number(count);
     console.log('Current game ID counter:', counter);
     return counter;
