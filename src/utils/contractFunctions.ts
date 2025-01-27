@@ -1,11 +1,13 @@
 import { ethers } from 'ethers';
 import { PVP_FLIP_GAME_ABI, PVP_FLIP_GAME_ADDRESS } from '../contracts/PVPFlipGameContract';
 
-export const SUPPORTED_TOKENS = {
-  ETH: '0x0000000000000000000000000000000000000000',
-  USDC: '0x0000000000000000000000000000000000000000',
-  USDT: '0x0000000000000000000000000000000000000000',
-  Token: '0x54939A9F8084b6D3362BD987dE7E0CD2e96462DC',
+export const SUPPORTED_TOKENS = { 
+  STABLEAI: '0x07F41412697D14981e770b6E335051b1231A2bA8',
+  DIG: '0x208561379990f106E6cD59dDc14dFB1F290016aF',
+  WEB9: '0x09CA293757C6ce06df17B96fbcD9c5f767f4b2E1', 
+  BNKR: '0x22aF33FE49fD1Fa80c7149773dDe5890D3c76F3b',
+  FED: '0x19975a01B71D4674325bd315E278710bc36D8e5f',
+  TestToken: '0x54939A9F8084b6D3362BD987dE7E0CD2e96462DC'
 };
 
 // Set up provider and contract for public access (read-only)
@@ -43,10 +45,11 @@ export const createGame = async (tokenAddress: string, betAmount: string) => {
 
     // Step 1: Check Player 1's balance to make sure they have enough tokens
     const balance = await tokenContract.balanceOf(await signer.getAddress());
-    console.log('Player 1 balance:', balance.toString());
+    console.log('Player balance:', balance.toString());  // Log the balance to check if it returns a BigInt
     if (balance < (betAmountInWei)) {
-      console.error('Not enough tokens to create game');
-      return;
+      const errorMessage = 'Not enough tokens to create game';
+      console.error(errorMessage);
+      throw new Error(errorMessage);
     }
 
     // Step 2: Approve the contract to spend the tokens
@@ -63,6 +66,10 @@ export const createGame = async (tokenAddress: string, betAmount: string) => {
     handleContractError(error);
   }
 };
+
+// Function to handle contract errors (e.g., user rejection, insufficient funds, etc.)
+// Function to handle contract errors (e.g., user rejection, insufficient funds, etc.)
+
 
 // Function to join an existing game
 export const joinGame = async (gameId: number, betAmount: string) => {

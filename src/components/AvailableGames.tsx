@@ -102,7 +102,7 @@ const AvailableGames: React.FC = () => {
                     <th className="px-6 py-4 text-left text-sm font-semibold text-white">Player</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-white">Required Bet</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-white">Token Name</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-white">Token Address</th>
+                   
                     <th className="px-6 py-4 text-left text-sm font-semibold text-white">Actions</th>
                   </tr>
                 </thead>
@@ -130,9 +130,7 @@ const AvailableGames: React.FC = () => {
                       <td className="px-6 py-4">
                         <span className="text-white/90">{game.tokenName || 'Unknown'}</span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-white/90 font-mono text-sm">{truncateAddress(game.tokenAddress)}</span>
-                      </td>
+                    
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <input

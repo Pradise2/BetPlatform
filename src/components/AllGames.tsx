@@ -11,10 +11,12 @@ const AllGames: React.FC = () => {
       setLoading(true);
       const gameIdCounter = await getGameIdCounter();
       const gamePromises = [];
-
+      console.log('gameICounter',gameIdCounter);
+      
+      if (gameIdCounter !== undefined) {
       for (let gameId = 0; gameId <= gameIdCounter; gameId++) {
         gamePromises.push(getGameDetailsWithoutWallet(gameId));
-      }
+      }}
 
       const gameDetails = await Promise.all(gamePromises);
       setGames(gameDetails);
