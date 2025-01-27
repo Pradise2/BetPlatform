@@ -15,10 +15,11 @@ const AvailableGames: React.FC = () => {
       const gameIdCounter = await getGameIdCounter();
       const gamePromises = [];
 
-      for (let gameId = 1; gameId <= gameIdCounter; gameId++) {
+      if (gameIdCounter !== undefined) {
+        for (let gameId = 1; gameId <= gameIdCounter; gameId++) {
         gamePromises.push(getGameDetailsWithoutWallet(gameId));
       }
-
+      }
       const gameDetails = await Promise.all(gamePromises);
       setGames(gameDetails.filter(game => game && !game.isCompleted));
       setLoading(false);
