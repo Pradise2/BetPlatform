@@ -169,7 +169,7 @@ const AvailableGames: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-white/90">
-                          {game.tokenName || 'Unknow'}
+                          {game.tokenName || 'Unknown'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
