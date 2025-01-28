@@ -70,7 +70,7 @@ const AllGames: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Trophy className="w-4 h-4 text-yellow-400" />
-                        <span className="text-white font-medium">#{index + 1}</span>
+                        <span className="text-white font-medium">#{index }</span>
                       </div>
                     </td>
 

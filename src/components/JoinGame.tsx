@@ -69,7 +69,8 @@ const JoinGame: React.FC = () => {
           setError('Bet amount must be equal to Player 1\'s bet');
           return;
         }
-
+console.log('gameId',gameId);
+console.log('betAmount',betAmount);
         await joinGame(gameId, betAmount);
         setError(null); // Clear error on success
       } catch (error) {
