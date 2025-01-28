@@ -4,6 +4,7 @@ import CreateGame from './components/CreateGame';
 import AllGames from './components/AllGames';
 import AvailableGames from './components/AvailableGames';
 import Navbar from './components/Narbar';
+import Add from './components/Add';
 
 
 const App: React.FC = () => {
@@ -24,6 +25,7 @@ const App: React.FC = () => {
       </div>
       
 <p>Game</p>
+<Add/>
     </div>
   );
 };

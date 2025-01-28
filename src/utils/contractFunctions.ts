@@ -11,8 +11,8 @@ export const SUPPORTED_TOKENS = {
 };
 
 // Set up provider and contract for public access (read-only)
-const publicProvider = new ethers.JsonRpcProvider('https://base-mainnet.infura.io/v3/b17a040a14bc48cfb3928a73d26f3617');
-const publicContract = new ethers.Contract(PVP_FLIP_GAME_ADDRESS, PVP_FLIP_GAME_ABI, publicProvider);
+export const publicProvider = new ethers.JsonRpcProvider('https://base-mainnet.infura.io/v3/b17a040a14bc48cfb3928a73d26f3617');
+export const publicContract = new ethers.Contract(PVP_FLIP_GAME_ADDRESS, PVP_FLIP_GAME_ABI, publicProvider);
 
 // Function to set up signer and contract for wallet interaction
 async function setupContractWithSigner() {
@@ -26,6 +26,18 @@ async function setupContractWithSigner() {
     throw error;
   }
 }
+
+// Function to add a supported token
+export const addSupportedToken = async (tokenAddress: string) => {
+  try {
+    const { contract } = await setupContractWithSigner();
+    const tx = await contract.addSupportedToken(tokenAddress);
+    await tx.wait();
+    console.log('Token added successfully');
+  } catch (error) {
+    console.error('Error adding token:', error);
+  }
+};
 
 // Function to create a new game
 export const createGame = async (tokenAddress: string, betAmount: string) => {
