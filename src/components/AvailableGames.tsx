@@ -81,9 +81,6 @@ const AvailableGames: React.FC = () => {
     }
   };
 
-  const truncateAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
 
   return (
     <div className="p-6">
@@ -172,7 +169,7 @@ const AvailableGames: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-white/90">
-                          {game.tokenName || 'Unknown'}
+                          {game.tokenName || 'Unknow'}
                         </span>
                       </td>
                       <td className="px-6 py-4">

@@ -4,7 +4,6 @@ import CreateGame from './components/CreateGame';
 import AllGames from './components/AllGames';
 import AvailableGames from './components/AvailableGames';
 import Navbar from './components/Narbar';
-import JoinGame from './components/JoinGame';
 
 
 const App: React.FC = () => {
@@ -23,9 +22,7 @@ const App: React.FC = () => {
       <div style={{ color: 'pink' }}>
         <AllGames />
       </div>
-      <div style={{ color: 'pink' }}>
-        <JoinGame/>
-      </div>
+    
 
     </div>
   );
