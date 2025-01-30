@@ -1,5 +1,5 @@
 import React from 'react';
-
+import CreateG from './components/CreateG';
 import CreateGame from './components/CreateGame';
 import AllGames from './components/AllGames';
 import AvailableGames from './components/AvailableGames';
@@ -11,8 +11,10 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
 
       {/* Header */}
-      <Navbar/>
+
       
+      <Navbar/>
+      <CreateG/>
       <div style={{ color: 'blue' }}>
         <CreateGame />
       </div> 
