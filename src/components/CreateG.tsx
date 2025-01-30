@@ -29,6 +29,9 @@ const CreateG: React.FC = () => {
     tokenBalance: '0',
     tokenSymbol: 'STABLEAI'
   });
+console.log('player1Choic:', state.player1Choice);
+
+console.log('time ', state.timeoutDuration)
 
   const fetchTokenBalance = useCallback(async () => {
     if (!address || !state.tokenAddress || !isConnected) return;
@@ -76,7 +79,9 @@ const CreateG: React.FC = () => {
   };
 
   const handleCreateGame = async () => {
+    console.log("handleCreateGame triggered");
     const validationError = validateInput();
+    console.log(validationError); 
     if (validationError) {
       setState(prev => ({ ...prev, error: validationError }));
       return;
@@ -108,6 +113,9 @@ const CreateG: React.FC = () => {
         loading: false
       }));
     }
+
+  
+   
   };
 
   return (
@@ -134,7 +142,7 @@ const CreateG: React.FC = () => {
             <label htmlFor="betAmount" className="block text-sm font-medium text-gray-700 mb-1">
               Bet Amount
             </label>
-            <div className="relative">
+            <div className="text-gray-700 relative">
               <input
                 id="betAmount"
                 type="number"

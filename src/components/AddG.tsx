@@ -1,14 +1,14 @@
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { addSupportedToken, publicContract } from '../utils/contractFunctions';
+import { addSupportedToken, publicContract } from '../utils/contract';
 
-const Add = () => {
+const AddG = () => {
   const [tokens, setTokens] = useState([]);
-  const [newTokenAddress, setNewTokenAddress] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-   
+   const [newTokenAddress, setNewTokenAddress] = useState('');
+   const [loading, setLoading] = useState(false);
+   const [errorMessage, setErrorMessage] = useState('');
+   const [successMessage, setSuccessMessage] = useState('');
+     const [tokenName, setTokenName] = useState('');
 
   // Fetch tokens from the smart contract
   const fetchTokens = async () => {
@@ -40,7 +40,7 @@ const Add = () => {
     setSuccessMessage('');
 
     try {
-      await addSupportedToken(newTokenAddress);
+      await addSupportedToken(newTokenAddress, tokenName);
       setSuccessMessage('Token added successfully!');
       setNewTokenAddress('');
       fetchTokens(); // Refresh tokens list
@@ -52,6 +52,8 @@ const Add = () => {
     }
   };
 
+
+ 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white shadow-lg rounded-lg p-6 max-w-lg w-full">
@@ -75,15 +77,23 @@ const Add = () => {
         <div className="mb-4">
           <input
             type="text"
-            className="w-full border rounded-lg px-4 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border rounded-lg px-4 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             placeholder="Enter token address"
             value={newTokenAddress}
             onChange={(e) => setNewTokenAddress(e.target.value)}
             disabled={loading}
           />
+          <input
+            type="text"
+            className="w-full border rounded-lg px-4 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+            placeholder="Enter token name"
+            value={tokenName}
+            onChange={(e) => setTokenName(e.target.value)}
+            disabled={loading}
+          />
           <button
             onClick={handleAddToken}
-            className={`w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 ${
+            className={`w-full bg-blue-500 text-black py-2 rounded-lg hover:bg-blue-600 ${
               loading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             disabled={loading}
@@ -99,4 +109,4 @@ const Add = () => {
   );
 };
 
-export default Add;
+export default AddG;

@@ -93,21 +93,16 @@ export const createGame = async (
   }
 };
 
-
-
 // Function to join an existing game
-export const joinGame = async (gameId: number, betAmount: string) => {
+export const joinGame = async (gameId: number) => {
   try {
     const { signer, contract } = await setupContractWithSigner();
-    const game = await contract.games(gameId);
+      // Fetch the game details (including betAmount, tokenAddress, etc.)
+      const game = await contract.games(gameId);
 
-    // Convert the bet amount to the same decimal units as the token (18 decimals for ERC20 tokens)
-    const betAmountInUnits = ethers.parseUnits(betAmount, 18);
-
-    // Check if the provided bet amount matches the one set by Player 1
-    if (betAmountInUnits.toString() !== game.betAmount.toString()) {
-      throw new Error('Bet amount must be equal to Player 1\'s bet');
-    }
+   // Fetch the bet amount for validation
+   const betAmountInUnits = game.betAmount;
+   const betAmountInWei = ethers.parseUnits(betAmountInUnits.toString(), 18)
 
     // Create token contract instance
     const tokenContract = new ethers.Contract(game.tokenAddress, [
@@ -117,21 +112,39 @@ export const joinGame = async (gameId: number, betAmount: string) => {
 
     // Step 1: Check Player 2's balance to make sure they have enough tokens
     const balance = await tokenContract.balanceOf(await signer.getAddress());
-    if (balance < (betAmountInUnits)) {
+    if (balance < (betAmountInWei)) {
       throw new Error('Not enough tokens to join game');
     }
 
     // Step 2: Approve the contract to spend the tokens
-    const approveTx = await tokenContract.approve(FLIP_GAME_ADDRESS, betAmountInUnits);
+    const approveTx = await tokenContract.approve(FLIP_GAME_ADDRESS, betAmountInWei);
     await approveTx.wait();
     console.log('Token approved successfully.');
 
     // Step 3: Proceed with the transaction if the bet amounts match
-    const tx = await contract.joinGame(gameId, betAmountInUnits);
+    const tx = await contract.joinGame(gameId);
     await tx.wait();
     console.log('Game joined successfully');
   } catch (error) {
     console.error('Error joining game:', error);
+    handleContractError(error as ContractError);
+  }
+};
+
+// Function to add a supported token
+export const addSupportedToken = async (tokenAddress: string, tokenName: string) => {
+  try {
+    const { contract } = await setupContractWithSigner();
+
+    console.log('Adding supported token:', tokenName, 'with address:', tokenAddress);
+
+    // Call the addSupportedToken function on the contract
+    const tx = await contract.addSupportedToken(tokenAddress, tokenName);
+    await tx.wait();
+    console.log('Token added successfully:', tx);
+
+  } catch (error) {
+    console.error('Error adding token:', error);
     handleContractError(error as ContractError);
   }
 };

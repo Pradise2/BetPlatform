@@ -4,6 +4,9 @@ import CreateGame from './components/CreateGame';
 import AllGames from './components/AllGames';
 import AvailableGames from './components/AvailableGames';
 import Navbar from './components/Narbar';
+import JoinG from './components/JoinG';
+import AddG from './components/AddG';
+import AvailableG from './components/AvailableG';
 
 
 const App: React.FC = () => {
@@ -12,15 +15,20 @@ const App: React.FC = () => {
 
       {/* Header */}
 
-      
+       <CreateG/>
+       <AvailableG/> 
+        <div style={{ color: 'cyan' }}>
+        <AvailableGames />
+      </div>
+       <JoinG/>
+      <AddG/>
+       
       <Navbar/>
-      <CreateG/>
+     
       <div style={{ color: 'blue' }}>
         <CreateGame />
       </div> 
-      <div style={{ color: 'cyan' }}>
-        <AvailableGames />
-      </div>
+     
       <div style={{ color: 'pink' }}>
         <AllGames />
       </div>
