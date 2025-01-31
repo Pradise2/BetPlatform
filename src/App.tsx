@@ -1,5 +1,6 @@
 import React from 'react';
 import CreateG from './components/CreateG';
+
 import Navbar from './components/Narbar';
 
 
@@ -11,8 +12,8 @@ const App: React.FC = () => {
 
       {/* Header */}
 
-       <Navbar/>
-       <CreateG/>
+      <Navbar/>
+      <CreateG/>
       
        
     
