@@ -21,20 +21,7 @@ const App: React.FC = () => {
       
        <AvailableG/> 
        <JoinG/>
-        <div style={{ color: 'cyan' }}>
-        <AvailableGames />
-      </div>
-       
-      <AddG/>
-       
-      
-      <div style={{ color: 'blue' }}>
-        <CreateGame />
-      </div> 
-     
-      <div style={{ color: 'pink' }}>
-        <AllGames />
-      </div>
+        
     
 
     </div>
