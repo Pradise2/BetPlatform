@@ -39,6 +39,7 @@ interface GameDetails {
   tokenName: string;
   tokenSymbol: string;
   player2Balance: string;
+  timeoutDuration: string;
 }
 
 // Function to handle contract errors with additional info
@@ -106,8 +107,11 @@ export const getGameDetails = async (gameId: number): Promise<GameDetails> => {
       tokenName: tokenName,
       tokenSymbol: tokenSymbol,
       player2Balance: player2BalanceInEther,
+      timeoutDuration: gameDetails.timeoutDuration
     };
+console.log("Time out duration:", gameDetails.timeoutDuration);
 
+console.log('game det', gameDetails)
     console.log("Formatted Game Details:", formattedGameDetails);
     return formattedGameDetails;
   } catch (error) {
@@ -115,6 +119,46 @@ export const getGameDetails = async (gameId: number): Promise<GameDetails> => {
     throw error;
   }
 };
+
+// Function to get the time left to expire for a game
+export const getTimeLeftToExpire = async (gameId: number) => {
+  try {
+    // Fetch the game details (createdAt and timeout duration)
+    const game = await publicContract.games(gameId);
+    const createdAt = game.createdAt; // Timestamp when the game was created
+    const timeoutDuration = await publicContract.gameTimeoutDurations(gameId); // Timeout duration for the game
+
+    // Ensure we are converting BigInt to number if necessary
+    const createdAtNumber = typeof createdAt === 'bigint' ? Number(createdAt) : createdAt;
+    const timeoutDurationNumber = typeof timeoutDuration === 'bigint' ? Number(timeoutDuration) : timeoutDuration;
+
+    // Get the current time in seconds
+    const currentTime = Math.floor(Date.now() / 1000);
+
+    // Calculate the expiration time (createdAt + timeoutDuration)
+    const expirationTime = createdAtNumber + timeoutDurationNumber;
+
+    // Calculate time left to expire
+    const timeLeft = expirationTime - currentTime;
+
+    // If the time left is positive, format it into hours, minutes, and seconds
+    if (timeLeft > 0) {
+      const hours = Math.floor(timeLeft / 3600);
+      const minutes = Math.floor((timeLeft % 3600) / 60);
+      const seconds = timeLeft % 60;
+
+      return { hours, minutes, seconds };
+    } else {
+      // If the game has expired, return 0 hours, 0 minutes, 0 seconds
+      return { hours: 0, minutes: 0, seconds: 0 };
+    }
+  } catch (error) {
+    console.error('Error fetching game info:', error);
+    throw error;
+  }
+};
+
+
 
 
 // Function to get the current game ID counter (using the public contract for read-only access)
@@ -131,16 +175,50 @@ export const getGameIdCounter = async () => {
 };
 
 
+// Example of how you would use the getTimeLeftToExpire function:
+export const fetchGameTimeLeft = async (gameId: number) => {
+  try {
+    const timeLeft = await getTimeLeftToExpire(gameId);
+    if (timeLeft > 0) {
+      console.log(`Time left to expire: ${timeLeft} seconds`);
+    } else {
+      console.log('The game has expired.');
+    }
+  } catch (error) {
+    console.error('Error fetching game time left:', error);
+  }
+}
+
+
 // Function to join an existing game
 export const joinGame = async (gameId: number) => {
   try {
+
+    console.log('Attempting to join game with ID:', gameId);
+
     const { signer, contract } = await setupContractWithSigner();
-      // Fetch the game details (including betAmount, tokenAddress, etc.)
-      const game = await contract.games(gameId);
+
+
+    console.log('Contract:', contract);
+    console.log('Signer:', signer);
+
+    // Fetch game details
+    const game = await contract.games(gameId);
+    console.log('Fetched game details:', game);
+
+     // Check if the game has already been completed
+     if (game.isCompleted) {
+      console.log(`Game with ID ${gameId} has already been completed.`);
+      alert('Game has already been completed.');
+      return;
+    }
+
 
    // Fetch the bet amount for validation
    const betAmountInUnits = game.betAmount;
-   const betAmountInWei = ethers.parseUnits(betAmountInUnits.toString(), 18)
+   const betAmountInWei = ethers.parseUnits(betAmountInUnits.toString(), 18);
+
+   console.log('Bet amount in wei:', betAmountInUnits);
 
     // Create token contract instance
     const tokenContract = new ethers.Contract(game.tokenAddress, [
@@ -150,27 +228,45 @@ export const joinGame = async (gameId: number) => {
 
     // Step 1: Check Player 2's balance to make sure they have enough tokens
     const balance = await tokenContract.balanceOf(await signer.getAddress());
-    if (balance < (betAmountInWei)) {
+    console.log('Player balance:', balance);
+
+    // const betAmountInWei = ethers.parseUnits(betAmountInUnits.toString(), 18); // betAmountInWei in wei
+
+    if (balance < (game.betAmount)) {
       throw new Error('Not enough tokens to join game');
     }
 console.log('Player balance:', balance);  
 
 console.log('betAmountInWei:', betAmountInWei);
 
-    // Step 2: Approve the contract to spend the tokens
-    const approveTx = await tokenContract.approve(FLIP_GAME_ADDRESS, betAmountInWei);
-    await approveTx.wait();
-    console.log('Token approved successfully.');
+      // Step 2: Approve the contract to spend the tokens
+      const approveTx = await tokenContract.approve(FLIP_GAME_ADDRESS, game.betAmount);
+      await approveTx.wait();
+      console.log('Token approved successfully.');
 
-    // Step 3: Proceed with the transaction if the bet amounts match
-    const tx = await contract.joinGame(gameId);
+          // Step 3: Get the current nonce
+    const currentNonce = await signer.getNonce();
+    console.log('Current nonce:', currentNonce);
+
+     // Send the transaction to join the game
+    const tx = await contract.joinGame(gameId, { nonce: currentNonce });
     await tx.wait();
-    console.log('Game joined successfully');
+    console.log('Transaction sent! Hash:', tx.hash);
+    
+    const receipt = await tx.wait();
+    if (receipt.status === 1) {
+      console.log(`Successfully joined game with ID: ${gameId}`);
+      alert(`Successfully joined game with ID: ${gameId}`);
+    } else {
+      console.log(`Transaction failed for Game ID: ${gameId}`);
+      alert(`Transaction failed for Game ID: ${gameId}`);
+    }
   } catch (error) {
     console.error('Error joining game:', error);
-    handleContractError(error as ContractError);
+    alert('An error occurred. Check the console for details.');
   }
 };
+
 
 // Function to create a new game
 export const createGame = async (
