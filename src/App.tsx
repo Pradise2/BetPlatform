@@ -20,7 +20,7 @@ const App: React.FC = () => {
       <CreateG/>
       
        <AvailableG/> 
-       <JoinG/>
+       
         
     
 
