@@ -29,9 +29,7 @@ const CreateG: React.FC = () => {
     tokenBalance: '0',
     tokenSymbol: 'STABLEAI'
   });
-console.log('player1Choic:', state.player1Choice);
 
-console.log('time ', state.timeoutDuration)
 
   const fetchTokenBalance = useCallback(async () => {
     if (!address || !state.tokenAddress || !isConnected) return;
@@ -73,22 +71,31 @@ console.log('time ', state.timeoutDuration)
   const validateInput = (): string | null => {
     if (!isConnected) return 'Please connect your wallet';
     if (!state.betAmount || parseFloat(state.betAmount) <= 0) return 'Bet amount must be positive';
-    if (parseFloat(state.tokenBalance) < parseFloat(state.betAmount)) return 'Insufficient token balance';
+    if (parseFloat(state.tokenBalance) < parseFloat(state.betAmount)) {
+    return `Insufficient ${state.tokenSymbol} balance`;
+    }    
     if (!state.timeoutDuration || parseInt(state.timeoutDuration) < 300) return 'Timeout must be at least 5 minutes';
     return null;
   };
 
   const handleCreateGame = async () => {
-    console.log("handleCreateGame triggered");
+
     const validationError = validateInput();
     console.log(validationError); 
+  
     if (validationError) {
       setState(prev => ({ ...prev, error: validationError }));
+  
+      // Clear the error message after 1 second (1000 milliseconds)
+      setTimeout(() => {
+        setState(prev => ({ ...prev, error: null }));
+      }, 1000);
+  
       return;
     }
-
+  
     setState(prev => ({ ...prev, error: null, success: null, loading: true }));
-
+  
     try {
       await createGame(
         state.tokenAddress,
@@ -96,14 +103,19 @@ console.log('time ', state.timeoutDuration)
         state.player1Choice,
         state.timeoutDuration
       );
-
+  
       setState(prev => ({
         ...prev,
         success: 'Game created successfully!',
         loading: false,
         betAmount: '' // Reset bet amount after successful creation
       }));
-
+  
+      // Clear the success message after 5 seconds (5000 milliseconds)
+      setTimeout(() => {
+        setState(prev => ({ ...prev, success: null }));
+      }, 5000);
+  
       // Refresh token balance
       fetchTokenBalance();
     } catch (error: any) {
@@ -112,12 +124,15 @@ console.log('time ', state.timeoutDuration)
         error: error.message || 'Failed to create game',
         loading: false
       }));
-    }
-
   
-   
+      // Clear the error message after 1 second (1000 milliseconds)
+      setTimeout(() => {
+        setState(prev => ({ ...prev, error: null }));
+      }, 1000);
+    }
   };
-
+  
+  
   return (
     <div className="bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">

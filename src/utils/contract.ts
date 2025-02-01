@@ -29,8 +29,6 @@ async function setupContractWithSigner() {
 
 // Define the GameDetails interface
 interface GameDetails {
-  player1: string;
-  player2: string;
   betAmount: string;
   tokenAddress: string;
   isCompleted: boolean;
@@ -39,27 +37,6 @@ interface GameDetails {
   tokenName: string;
   tokenSymbol: string;
   player2Balance: string;
-  timeoutDuration: string;
-}
-
-// Function to handle contract errors with additional info
-interface ContractError extends Error {
-  code?: string;
-  transaction?: any;
-  revert?: string;
-}
-
-function handleContractError(error: ContractError) {
-  if (error.code === 'CALL_EXCEPTION') {
-    console.error('Transaction data:', error.transaction);
-    if (error.revert) {
-      console.error('Revert reason:', error.revert);
-    }
-  } else if (error.code === 'ACTION_REJECTED') {
-    console.error('User rejected the action:', error);
-  } else {
-    console.error('Unexpected error:', error);
-  }
 }
 
 // Async function to fetch the game details
@@ -95,8 +72,6 @@ export const getGameDetails = async (gameId: number): Promise<GameDetails> => {
 
     // Format the data (e.g., converting from Wei to Ether)
     const formattedGameDetails: GameDetails = {
-      player1: gameDetails.player1,
-      player2: gameDetails.player2,
       betAmount: ethers.formatUnits(gameDetails.betAmount), // Convert betAmount from Wei to Ether
       tokenAddress: gameDetails.tokenAddress,
       isCompleted: gameDetails.isCompleted,
@@ -107,9 +82,8 @@ export const getGameDetails = async (gameId: number): Promise<GameDetails> => {
       tokenName: tokenName,
       tokenSymbol: tokenSymbol,
       player2Balance: player2BalanceInEther,
-      timeoutDuration: gameDetails.timeoutDuration
     };
-console.log("Time out duration:", gameDetails.timeoutDuration);
+
 
 console.log('game det', gameDetails)
     console.log("Formatted Game Details:", formattedGameDetails);
@@ -120,43 +94,67 @@ console.log('game det', gameDetails)
   }
 };
 
+// Function to handle contract errors with additional info
+interface ContractError extends Error {
+  code?: string;
+  transaction?: any;
+  revert?: string;
+}
+
+function handleContractError(error: ContractError) {
+  if (error.code === 'CALL_EXCEPTION') {
+    console.error('Transaction data:', error.transaction);
+    if (error.revert) {
+      console.error('Revert reason:', error.revert);
+    }
+  } else if (error.code === 'ACTION_REJECTED') {
+    console.error('User rejected the action:', error);
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
+
+
+
 // Function to get the time left to expire for a game
 export const getTimeLeftToExpire = async (gameId: number) => {
   try {
-    // Fetch the game details (createdAt and timeout duration)
+    // Fetch game data
     const game = await publicContract.games(gameId);
     const createdAt = game.createdAt; // Timestamp when the game was created
     const timeoutDuration = await publicContract.gameTimeoutDurations(gameId); // Timeout duration for the game
 
-    // Ensure we are converting BigInt to number if necessary
+    // Convert BigInt to number (if applicable)
     const createdAtNumber = typeof createdAt === 'bigint' ? Number(createdAt) : createdAt;
     const timeoutDurationNumber = typeof timeoutDuration === 'bigint' ? Number(timeoutDuration) : timeoutDuration;
 
-    // Get the current time in seconds
+    // Get current time in seconds
     const currentTime = Math.floor(Date.now() / 1000);
 
-    // Calculate the expiration time (createdAt + timeoutDuration)
+    // Calculate the expiration time
     const expirationTime = createdAtNumber + timeoutDurationNumber;
 
-    // Calculate time left to expire
+    // Calculate the time left before expiration
     const timeLeft = expirationTime - currentTime;
 
-    // If the time left is positive, format it into hours, minutes, and seconds
-    if (timeLeft > 0) {
-      const hours = Math.floor(timeLeft / 3600);
-      const minutes = Math.floor((timeLeft % 3600) / 60);
-      const seconds = timeLeft % 60;
-
-      return { hours, minutes, seconds };
-    } else {
-      // If the game has expired, return 0 hours, 0 minutes, 0 seconds
-      return { hours: 0, minutes: 0, seconds: 0 };
+    if (timeLeft <= 0) {
+      // If the game has expired, return null or an indication of expiration
+      return null;
     }
+
+    // Format time left to expire into hours, minutes, and seconds
+    const hours = Math.floor(timeLeft / 3600);
+    const minutes = Math.floor((timeLeft % 3600) / 60);
+    const seconds = timeLeft % 60;
+
+    return { hours, minutes, seconds };
+
   } catch (error) {
     console.error('Error fetching game info:', error);
-    throw error;
+    throw new Error('Failed to retrieve game expiration details');
   }
 };
+
 
 
 
@@ -175,19 +173,7 @@ export const getGameIdCounter = async () => {
 };
 
 
-// Example of how you would use the getTimeLeftToExpire function:
-export const fetchGameTimeLeft = async (gameId: number) => {
-  try {
-    const timeLeft = await getTimeLeftToExpire(gameId);
-    if (timeLeft > 0) {
-      console.log(`Time left to expire: ${timeLeft} seconds`);
-    } else {
-      console.log('The game has expired.');
-    }
-  } catch (error) {
-    console.error('Error fetching game time left:', error);
-  }
-}
+
 
 
 // Function to join an existing game
