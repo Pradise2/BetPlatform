@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { getGameDetails, getGameIdCounter, joinGame, getTimeLeftToExpire } from '../utils/contract';
+import { getGameDetails, getGameIdCounter, getTimeLeftToExpire } from '../utils/contract';
+import { cancelGame } from '../utils/contr';
+
 import {
   GamepadIcon,
   Trophy,
   Coins,
   XCircle,
-  ArrowRight,
   CircleDollarSign,
 } from 'lucide-react';
 
@@ -25,93 +26,98 @@ const LoadingSpinner = () => (
   </div>
 );
 
-const AvailableG = () => {
+const CancelG = () => {
   const [gameDetails, setGameDetails] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [loadingGameId, setLoadingGameId] = useState<number | null>(null); // Track the loading game
-  const gamesPerPage = 5; // Number of games to display per page
+  const gamesPerPage = 5;
+  const [connectedAccount, setConnectedAccount] = useState<string>('');
+  const [cancelingGame, setCancelingGame] = useState<number | null>(null); // Track which game is being canceled
 
-  useEffect(() => {
-    const fetchGameDetails = async () => {
-      try {
-        const gameIdCounter = await getGameIdCounter();
-        console.log('Game ID Counter:', gameIdCounter);
-
-        if (gameIdCounter === undefined) {
-          setError('No active games available.');
-          return;
-        }
-
-        const games = await Promise.all(
-          Array.from({ length: gameIdCounter }, async (_, gameId) => {
-            console.log(`Fetching details for game ${gameId}...`);
-            const game = await getGameDetails(gameId);
-            const timeLeft = await getTimeLeftToExpire(gameId);
-            return { ...game, timeLeft, gameId };
-          })
-        );
-
-        const activeGames = games.filter(
-          (game) =>
-            !game.isCompleted &&
-            game.timeLeft &&
-            (game.timeLeft.hours * 3600 +
-              game.timeLeft.minutes * 60 +
-              game.timeLeft.seconds) > 0
-        );
-
-        // Sort games by descending order of gameId
-        activeGames.sort((a, b) => b.gameId - a.gameId);
-
-        setGameDetails(activeGames);
-      } catch (error) {
-        console.error('Error fetching games:', error);
-        setError('Error fetching games');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGameDetails();
-  }, []);
-
-  const handleJoinGame = async (gameId: number) => {
-    setLoadingGameId(gameId); // Set the game ID as loading
+  // Function to fetch and update game details for the current page
+  const fetchGamesForCurrentPage = async () => {
+    setLoading(true);
     setError(null);
     try {
-      console.log(`Joining game ${gameId}...`);
-      await joinGame(gameId);
-      console.log(`Successfully joined game ${gameId}`);
+      const gameIdCounter = await getGameIdCounter();
+      console.log('Game ID Counter:', gameIdCounter);
+
+      if (gameIdCounter === undefined) {
+        setError('No active games available.');
+        return;
+      }
+
+      const games = await Promise.all(
+        Array.from({ length: gameIdCounter }, async (_, gameId) => {
+          console.log(`Fetching details for game ${gameId}...`);
+          const game = await getGameDetails(gameId);
+          const timeLeft = await getTimeLeftToExpire(gameId);
+          return { ...game, timeLeft, gameId };
+        })
+      );
+
+      // Sort games in descending order by gameId
+      const sortedGames = games.sort((a, b) => b.gameId - a.gameId);
+
+      // Filter games based on expiration time and current player's wallet address
+      const expiredGames = sortedGames.filter(game => {
+        const hasExpired = game.createdAt + 24 * 60 * 60 < Math.floor(Date.now() / 1000); // 24 hours in seconds
+        return game.player1.toLowerCase() === connectedAccount.toLowerCase() && !game.isCompleted && hasExpired;
+      });
+
+      console.log('Expired Games:', expiredGames);
+      console.log('Total Expired Games:', expiredGames.length);
+      console.log('game.player1:', connectedAccount);
+      
+      // Pagination: Only slice the data for the current page
+      const indexOfLastGame = currentPage * gamesPerPage;
+      const indexOfFirstGame = indexOfLastGame - gamesPerPage;
+      const currentGames = expiredGames.slice(indexOfFirstGame, indexOfLastGame);
+
+      setGameDetails(currentGames);
+    } catch (error) {
+      console.error('Error fetching games:', error);
+      setError('Error fetching games');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchConnectedAccount = async () => {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      setConnectedAccount(accounts[0]);
+    };
+
+    fetchGamesForCurrentPage();
+    fetchConnectedAccount();
+  }, [currentPage]); // Re-fetch games when the page changes
+
+  const handleCancelGame = async (gameId: number) => {
+    setCancelingGame(gameId); // Start loading for the specific game
+    setLoading(true);
+    setError(null);
+    try {
+      console.log(`Canceling game ${gameId}...`);
+      await cancelGame(gameId);
+      console.log(`Successfully canceled game ${gameId}`);
     } catch (err) {
-      console.error('Error joining game:', err);
+      console.error('Error canceling game:', err);
       if (err instanceof Error) {
-        setError(`Failed to join game: ${err.message}`);
+        setError(`Failed to cancel game: ${err.message}`);
       } else {
-        setError('An unknown error occurred while trying to join the game.');
+        setError('An unknown error occurred while trying to cancel the game.');
       }
     } finally {
-      setLoadingGameId(null); // Reset loading state once done
+      setCancelingGame(null); // Reset loading state for this game
+      setLoading(false);
     }
   };
 
-  const indexOfLastGame = currentPage * gamesPerPage;
-  const indexOfFirstGame = indexOfLastGame - gamesPerPage;
-  const currentGames = gameDetails.slice(indexOfFirstGame, indexOfLastGame);
-
-  const totalPages = Math.ceil(gameDetails.length / gamesPerPage);
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+  // Pagination controls
+  const paginate = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -123,12 +129,12 @@ const AvailableG = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <GamepadIcon className="w-8 h-8 text-purple-400" />
-            <h2 className="text-xl font-bold text-white">Available Games</h2>
+            <h2 className="text-xl font-bold text-white">Expired Games</h2>
           </div>
           <div className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-400" />
             <span className="text-white/90 text-lg">
-              {gameDetails.length} Active Games
+              {gameDetails.length} Expired Games
             </span>
           </div>
         </div>
@@ -146,11 +152,10 @@ const AvailableG = () => {
           <div className="bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 shadow-xl p-8 text-center">
             <GamepadIcon className="w-12 h-12 text-purple-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">
-              No Available Games
+              No Expired Games
             </h3>
             <p className="text-white/70">
-              There are currently no active games to join. Check back later or
-              create a game.
+              There are currently no expired games to cancel. Check back later.
             </p>
           </div>
         ) : (
@@ -169,13 +174,10 @@ const AvailableG = () => {
                       Token Name
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-white">
-                      Game Completed
+                      Player 1 Choice
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-white">
-                      player1Choice
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-white">
-                      Time
+                      Time Left
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-white">
                       Actions
@@ -183,7 +185,7 @@ const AvailableG = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
-                  {currentGames.map((game) => (
+                  {gameDetails.map((game) => (
                     <tr key={game.gameId} className="hover:bg-white/5 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
@@ -206,11 +208,6 @@ const AvailableG = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-white/90">
-                          {game.isCompleted ? 'Yes' : 'No'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-white/90">
                           {game.player1Choice ? 'Heads' : 'Tails'}
                         </span>
                       </td>
@@ -224,18 +221,14 @@ const AvailableG = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <button
-                            onClick={() => handleJoinGame(game.gameId)}
-                            disabled={game.isCompleted || game.timeLeft <= 0 || loadingGameId === game.gameId}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium transition-all hover:opacity-90 ${
-                              game.isCompleted || game.timeLeft <= 0 || loadingGameId === game.gameId
-                                ? 'cursor-not-allowed opacity-50'
-                                : ''
-                            }`}
+                            onClick={() => handleCancelGame(game.gameId)}
+                            className="px-4 py-2 text-white bg-red-600 rounded-md"
+                            disabled={cancelingGame === game.gameId} // Disable the button while canceling
                           >
-                            {loadingGameId === game.gameId ? (
-                              <span className="spinner-border text-white/90"></span>
+                            {cancelingGame === game.gameId ? (
+                              <span className="spinner-border spinner-border-sm"></span>
                             ) : (
-                              <>Join Game <ArrowRight className="w-4 h-4" /></>
+                              'Cancel Game'
                             )}
                           </button>
                         </div>
@@ -248,22 +241,20 @@ const AvailableG = () => {
           </div>
         )}
 
-        {/* Pagination */}
-        <div className="flex justify-between mt-4">
+        {/* Pagination Controls */}
+        <div className="flex justify-center mt-4">
           <button
-            onClick={handlePreviousPage}
+            onClick={() => paginate(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-4 py-2 bg-purple-500 text-white rounded-lg disabled:opacity-50"
+            className="px-4 py-2 text-white bg-purple-600 rounded-md disabled:bg-gray-500"
           >
             Previous
           </button>
-          <span className="text-white/90">
-            Page {currentPage} of {totalPages}
-          </span>
+          <span className="mx-4 text-white">{currentPage}</span>
           <button
-            onClick={handleNextPage}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-purple-500 text-white rounded-lg disabled:opacity-50"
+            onClick={() => paginate(currentPage + 1)}
+            disabled={gameDetails.length < gamesPerPage}
+            className="px-4 py-2 text-white bg-purple-600 rounded-md disabled:bg-gray-500"
           >
             Next
           </button>
@@ -273,4 +264,4 @@ const AvailableG = () => {
   );
 };
 
-export default AvailableG;
+export default CancelG;

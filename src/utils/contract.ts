@@ -37,6 +37,7 @@ interface GameDetails {
   tokenName: string;
   tokenSymbol: string;
   player2Balance: string;
+  player1: string;
 }
 
 // Async function to fetch the game details
@@ -82,6 +83,7 @@ export const getGameDetails = async (gameId: number): Promise<GameDetails> => {
       tokenName: tokenName,
       tokenSymbol: tokenSymbol,
       player2Balance: player2BalanceInEther,
+      player1: gameDetails.player1,
     };
 
 

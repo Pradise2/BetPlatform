@@ -105,3 +105,25 @@ export const joinGame = async (gameId: number) => {
     alert('An error occurred. Check the console for details.');
   }
 };
+
+
+// Function to cancel a game by its gameId
+export async function cancelGame(gameId: number) {
+  try {
+     // Set up contract with signer
+     const { signer, contract } = await setupContractWithSigner();
+     console.log('Signer:', signer);
+
+    // Call the cancelGame function on the smart contract
+    const tx = await contract.cancelGame(gameId);
+    
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+    
+    console.log('Game cancelled successfully:', receipt);
+    return receipt;
+  } catch (error) {
+    console.error('Error cancelling the game:', error);
+    throw error;
+  }
+}

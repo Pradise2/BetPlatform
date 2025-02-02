@@ -8,6 +8,7 @@ import JoinG from './components/JoinG';
 import AddG from './components/AddG';
 import AvailableG from './components/AvailableG';
 import AllG from './components/AllG';
+import CancelG from './components/CancelG';
 
 
 
@@ -19,9 +20,10 @@ const App: React.FC = () => {
 
       <Navbar/>
       <CreateG/>
-      
-       <AvailableG/> 
-       <AllG/>
+      <AvailableG/>
+      <AllG/>
+       
+       <CancelG/>
        
         
     
