@@ -124,7 +124,7 @@ export const getTimeLeftToExpire = async (gameId: number) => {
     // Fetch game data
     const game = await publicContract.games(gameId);
     const createdAt = game.createdAt; // Timestamp when the game was created
-    const timeoutDuration = await publicContract.gameTimeoutDurations(gameId); // Timeout duration for the game
+    const timeoutDuration = game.timeoutDuration; // Timeout duration for the game (from the Game struct)
 
     // Convert BigInt to number (if applicable)
     const createdAtNumber = typeof createdAt === 'bigint' ? Number(createdAt) : createdAt;
@@ -159,8 +159,6 @@ export const getTimeLeftToExpire = async (gameId: number) => {
 
 
 
-
-
 // Function to get the current game ID counter (using the public contract for read-only access)
 export const getGameIdCounter = async () => {
   try {
@@ -173,9 +171,6 @@ export const getGameIdCounter = async () => {
     return 0; // Return 0 or appropriate fallback value
   }
 };
-
-
-
 
 
 // Function to join an existing game
