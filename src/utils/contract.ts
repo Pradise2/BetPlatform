@@ -174,13 +174,12 @@ export const getGameIdCounter = async () => {
 
 
 // Function to join an existing game
-export const joinGame = async (gameId: number) => {
-  try {
 
+export const joinGame = async (gameId: number, setError: React.Dispatch<React.SetStateAction<string | null>>) => {
+  try {
     console.log('Attempting to join game with ID:', gameId);
 
     const { signer, contract } = await setupContractWithSigner();
-
 
     console.log('Contract:', contract);
     console.log('Signer:', signer);
@@ -189,19 +188,20 @@ export const joinGame = async (gameId: number) => {
     const game = await contract.games(gameId);
     console.log('Fetched game details:', game);
 
-     // Check if the game has already been completed
-     if (game.isCompleted) {
+    // Check if the game has already been completed
+    if (game.isCompleted) {
       console.log(`Game with ID ${gameId} has already been completed.`);
-      alert('Game has already been completed.');
+      const errorMessage = 'Game has already been completed.';
+      alert(errorMessage); // Show error in alert
+      setError(errorMessage); // Display error in the UI
       return;
     }
 
+    // Fetch the bet amount for validation
+    const betAmountInUnits = game.betAmount;
+    const betAmountInWei = ethers.parseUnits(betAmountInUnits.toString(), 18);
 
-   // Fetch the bet amount for validation
-   const betAmountInUnits = game.betAmount;
-   const betAmountInWei = ethers.parseUnits(betAmountInUnits.toString(), 18);
-
-   console.log('Bet amount in wei:', betAmountInUnits);
+    console.log('Bet amount in wei:', betAmountInUnits);
 
     // Create token contract instance
     const tokenContract = new ethers.Contract(game.tokenAddress, [
@@ -213,42 +213,55 @@ export const joinGame = async (gameId: number) => {
     const balance = await tokenContract.balanceOf(await signer.getAddress());
     console.log('Player balance:', balance);
 
-    // const betAmountInWei = ethers.parseUnits(betAmountInUnits.toString(), 18); // betAmountInWei in wei
-
     if (balance < (game.betAmount)) {
-      throw new Error('Not enough tokens to join game');
+      const errorMessage = 'Not enough tokens to join the game';
+      alert(errorMessage); // Show error in alert
+      setError(errorMessage); // Display error in the UI
+      return;
     }
-console.log('Player balance:', balance);  
 
-console.log('betAmountInWei:', betAmountInWei);
+    console.log('Player balance:', balance);
+    console.log('betAmountInWei:', betAmountInWei);
 
-      // Step 2: Approve the contract to spend the tokens
-      const approveTx = await tokenContract.approve(FLIP_GAME_ADDRESS, game.betAmount);
-      await approveTx.wait();
-      console.log('Token approved successfully.');
+    // Step 2: Approve the contract to spend the tokens
+    const approveTx = await tokenContract.approve(FLIP_GAME_ADDRESS, game.betAmount);
+    await approveTx.wait();
+    console.log('Token approved successfully.');
 
-          // Step 3: Get the current nonce
+    // Step 3: Get the current nonce
     const currentNonce = await signer.getNonce();
     console.log('Current nonce:', currentNonce);
 
-     // Send the transaction to join the game
+    // Send the transaction to join the game
     const tx = await contract.joinGame(gameId, { nonce: currentNonce });
     await tx.wait();
     console.log('Transaction sent! Hash:', tx.hash);
-    
+
     const receipt = await tx.wait();
     if (receipt.status === 1) {
       console.log(`Successfully joined game with ID: ${gameId}`);
-      alert(`Successfully joined game with ID: ${gameId}`);
     } else {
       console.log(`Transaction failed for Game ID: ${gameId}`);
-      alert(`Transaction failed for Game ID: ${gameId}`);
+      const errorMessage = `Transaction failed for Game ID: ${gameId}`;
+      alert(errorMessage); // Show error in alert
+      setError(errorMessage); // Display error in the UI
     }
   } catch (error) {
     console.error('Error joining game:', error);
-    alert('An error occurred. Check the console for details.');
+
+    // Check if the error contains specific revert message
+    let errorMessage = 'An error occurred while joining the game. Check the console for details.';
+    if (error.message.includes('Player 1 cannot join their own game')) {
+      errorMessage = 'You cannot join your own game as Player 1!';
+    }
+
+    alert(errorMessage); // Show error in alert
+    setError(errorMessage); // Display error in the UI
   }
 };
+
+
+
 
 
 // Function to create a new game

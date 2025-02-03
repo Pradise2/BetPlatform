@@ -82,7 +82,7 @@ const AvailableG = () => {
     setError(null);
     try {
       console.log(`Joining game ${gameId}...`);
-      await joinGame(gameId);
+      await joinGame(gameId, setError); // Pass setError to handle errors
       console.log(`Successfully joined game ${gameId}`);
     } catch (err) {
       console.error('Error joining game:', err);
@@ -120,19 +120,7 @@ const AvailableG = () => {
   return (
     <div className="p-6">
       <div className="max-w-[1400px] mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <GamepadIcon className="w-8 h-8 text-purple-400" />
-            <h2 className="text-xl font-bold text-white">Available Games</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-400" />
-            <span className="text-white/90 text-lg">
-              {gameDetails.length} Active Games
-            </span>
-          </div>
-        </div>
-
+        {/* Display Error Message */}
         {error && (
           <div className="mb-6 bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
             <p className="flex items-center gap-2">
@@ -142,6 +130,7 @@ const AvailableG = () => {
           </div>
         )}
 
+        {/* Table and other UI */}
         {gameDetails.length === 0 ? (
           <div className="bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 shadow-xl p-8 text-center">
             <GamepadIcon className="w-12 h-12 text-purple-400 mx-auto mb-4" />
@@ -233,9 +222,12 @@ const AvailableG = () => {
                             }`}
                           >
                             {loadingGameId === game.gameId ? (
-                              <span className="spinner-border text-white/90"></span>
+                              <span className="spinner-border spinner-border-sm"></span>
                             ) : (
-                              <>Join Game <ArrowRight className="w-4 h-4" /></>
+                              <>
+                                <ArrowRight className="w-4 h-4" />
+                                Join Game
+                              </>
                             )}
                           </button>
                         </div>
@@ -245,29 +237,27 @@ const AvailableG = () => {
                 </tbody>
               </table>
             </div>
+            <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20">
+              <button
+                onClick={handlePreviousPage}
+                className="text-white disabled:opacity-50"
+                disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              <div className="text-white">
+                Page {currentPage} of {totalPages}
+              </div>
+              <button
+                onClick={handleNextPage}
+                className="text-white disabled:opacity-50"
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
-
-        {/* Pagination */}
-        <div className="flex justify-between mt-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={currentPage === 1}
-            className="px-4 py-2 bg-purple-500 text-white rounded-lg disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span className="text-white/90">
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={handleNextPage}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-purple-500 text-white rounded-lg disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
       </div>
     </div>
   );
