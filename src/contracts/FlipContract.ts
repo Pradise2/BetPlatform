@@ -4,17 +4,6 @@ export const FLIP_GAME_ABI = [
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "initialOwner",
-				"type": "address"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "owner",
 				"type": "address"
 			}
@@ -201,19 +190,6 @@ export const FLIP_GAME_ABI = [
 		"type": "event"
 	},
 	{
-		"inputs": [],
-		"name": "TIMEOUT_DURATION",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -260,6 +236,11 @@ export const FLIP_GAME_ABI = [
 				"internalType": "bool",
 				"name": "player1Choice",
 				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timeoutDuration",
+				"type": "uint256"
 			}
 		],
 		"name": "createGame",
@@ -268,27 +249,96 @@ export const FLIP_GAME_ABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "gameIdCounter",
-		"outputs": [
+		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "",
+				"name": "gameId",
 				"type": "uint256"
 			}
 		],
-		"stateMutability": "view",
+		"name": "joinGame",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
 		"inputs": [
 			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
+			}
+		],
+		"name": "removeSupportedToken",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newTreasury",
+				"type": "address"
+			}
+		],
+		"name": "setTreasury",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "tokenAddress",
+				"type": "address"
+			},
+			{
 				"internalType": "uint256",
-				"name": "",
+				"name": "amount",
 				"type": "uint256"
 			}
 		],
-		"name": "gameIds",
+		"name": "withdrawTreasuryFunds",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "initialOwner",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "gameIdCounter",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -343,67 +393,11 @@ export const FLIP_GAME_ABI = [
 				"internalType": "uint256",
 				"name": "createdAt",
 				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "offset",
-				"type": "uint256"
 			},
 			{
 				"internalType": "uint256",
-				"name": "limit",
+				"name": "timeoutDuration",
 				"type": "uint256"
-			}
-		],
-		"name": "getAllGamesInfo",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "address",
-						"name": "player1",
-						"type": "address"
-					},
-					{
-						"internalType": "address",
-						"name": "player2",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "betAmount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "tokenAddress",
-						"type": "address"
-					},
-					{
-						"internalType": "bool",
-						"name": "isCompleted",
-						"type": "bool"
-					},
-					{
-						"internalType": "bool",
-						"name": "player1Choice",
-						"type": "bool"
-					},
-					{
-						"internalType": "uint256",
-						"name": "createdAt",
-						"type": "uint256"
-					}
-				],
-				"internalType": "struct PvpFlipGame.Game[]",
-				"name": "",
-				"type": "tuple[]"
 			}
 		],
 		"stateMutability": "view",
@@ -423,19 +417,6 @@ export const FLIP_GAME_ABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "gameId",
-				"type": "uint256"
-			}
-		],
-		"name": "joinGame",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "owner",
 		"outputs": [
@@ -446,39 +427,6 @@ export const FLIP_GAME_ABI = [
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "tokenAddress",
-				"type": "address"
-			}
-		],
-		"name": "removeSupportedToken",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newTreasury",
-				"type": "address"
-			}
-		],
-		"name": "setTreasury",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -539,19 +487,6 @@ export const FLIP_GAME_ABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "treasury",
 		"outputs": [
@@ -563,29 +498,11 @@ export const FLIP_GAME_ABI = [
 		],
 		"stateMutability": "view",
 		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "tokenAddress",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "withdrawTreasuryFunds",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	}
 ];
 
 // src/contracts/FlipGameContract.ts
-export const FLIP_GAME_ADDRESS = '0xd8eb061aaC5fDFc618399627cdd554767145f673';
+export const FLIP_GAME_ADDRESS = '0x13c44cf66803236700E61D265c00EDDf0f1bcf84';
 
 // Supported tokens - replace with actual token addresses
 export const SUPPORTED_TOKENS = { 
