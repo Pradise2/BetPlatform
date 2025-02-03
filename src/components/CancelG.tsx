@@ -28,6 +28,7 @@ const LoadingSpinner = () => (
 
 const CancelG = () => {
   const [gameDetails, setGameDetails] = useState<any[]>([]);
+  
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -69,7 +70,7 @@ const CancelG = () => {
       console.log('Expired Games:', expiredGames);
       console.log('Total Expired Games:', expiredGames.length);
       console.log('game.player1:', connectedAccount);
-      
+     
       // Pagination: Only slice the data for the current page
       const indexOfLastGame = currentPage * gamesPerPage;
       const indexOfFirstGame = indexOfLastGame - gamesPerPage;
@@ -85,14 +86,21 @@ const CancelG = () => {
   };
 
   useEffect(() => {
+    // Fetch connected account when the component mounts
     const fetchConnectedAccount = async () => {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       setConnectedAccount(accounts[0]);
     };
 
-    fetchGamesForCurrentPage();
     fetchConnectedAccount();
-  }, [currentPage]); // Re-fetch games when the page changes
+  }, []); // Only run once when the component mounts
+
+  // Ensure fetchGamesForCurrentPage runs only when connectedAccount is set
+  useEffect(() => {
+    if (connectedAccount) {
+      fetchGamesForCurrentPage();
+    }
+  }, [connectedAccount, currentPage]); // Fetch games whenever connectedAccount or currentPage changes
 
   const handleCancelGame = async (gameId: number) => {
     setCancelingGame(gameId); // Start loading for the specific game

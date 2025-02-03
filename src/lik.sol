@@ -95,50 +95,49 @@ contract PvpFlipGame is ReentrancyGuard, Ownable {
         emit TokenRemoved(tokenAddress);
     }
 
-   function createGame(uint256 betAmount, address tokenAddress, bool player1Choice) external tokenSupported(tokenAddress) {
-    require(betAmount > 0, "Bet amount must be greater than zero");
-    require(isContract(tokenAddress), "Address is not a contract");
+    function createGame(uint256 betAmount, address tokenAddress, bool player1Choice) external tokenSupported(tokenAddress) {
+        require(betAmount > 0, "Bet amount must be greater than zero");
+        require(isContract(tokenAddress), "Address is not a contract");
 
-    IERC20 token = IERC20(tokenAddress);
+        IERC20 token = IERC20(tokenAddress);
 
-    // Attempt to transfer betAmount from player1 to the treasury
-    bool success = token.transferFrom(msg.sender, treasury, betAmount);
-    require(success, "Token transfer failed or token is not ERC20 compliant");
+        // Attempt to transfer betAmount from player1 to the treasury
+        bool success = token.transferFrom(msg.sender, treasury, betAmount);
+        require(success, "Token transfer failed or token is not ERC20 compliant");
 
-    uint256 gameId = gameIdCounter++;
-    games[gameId] = Game({
-        player1: msg.sender,
-        player2: address(0),
-        betAmount: betAmount,
-        tokenAddress: tokenAddress,
-        isCompleted: false,
-        player1Choice: player1Choice,
-        createdAt: block.timestamp
-    });
+        uint256 gameId = gameIdCounter++;
+        games[gameId] = Game({
+            player1: msg.sender,
+            player2: address(0),
+            betAmount: betAmount,
+            tokenAddress: tokenAddress,
+            isCompleted: false,
+            player1Choice: player1Choice,
+            createdAt: block.timestamp
+        });
 
-    gameIds.push(gameId);
-    emit GameCreated(gameId, msg.sender, betAmount, tokenAddress, player1Choice);
-}
+        gameIds.push(gameId);
+        emit GameCreated(gameId, msg.sender, betAmount, tokenAddress, player1Choice);
+    }
 
-function joinGame(uint256 gameId) external gameExists(gameId) gameNotCompleted(gameId) {
-    Game storage game = games[gameId];
-    require(block.timestamp <= game.createdAt + TIMEOUT_DURATION, "Game has expired");
-    require(game.player2 == address(0), "Game already has two players");
-    require(msg.sender != game.player1, "Player 1 cannot join their own game");
+    function joinGame(uint256 gameId) external gameExists(gameId) gameNotCompleted(gameId) {
+        Game storage game = games[gameId];
+        require(block.timestamp <= game.createdAt + TIMEOUT_DURATION, "Game has expired");
+        require(game.player2 == address(0), "Game already has two players");
+        require(msg.sender != game.player1, "Player 1 cannot join their own game");
 
-    IERC20 token = IERC20(game.tokenAddress);
-    uint256 betAmount = game.betAmount;
+        IERC20 token = IERC20(game.tokenAddress);
+        uint256 betAmount = game.betAmount;
 
-    // Attempt to transfer betAmount from player2 to the treasury
-    bool success = token.transferFrom(msg.sender, treasury, betAmount);
-    require(success, "Token transfer failed or token is not ERC20 compliant");
+        // Attempt to transfer betAmount from player2 to the treasury
+        bool success = token.transferFrom(msg.sender, treasury, betAmount);
+        require(success, "Token transfer failed or token is not ERC20 compliant");
 
-    game.player2 = msg.sender;
-    emit GameJoined(gameId, game.player1, msg.sender, betAmount, game.tokenAddress);
+        game.player2 = msg.sender;
+        emit GameJoined(gameId, game.player1, msg.sender, betAmount, game.tokenAddress);
 
-    resolveGame(gameId);
-}
-
+        resolveGame(gameId);
+    }
 
     function cancelGame(uint256 gameId) external gameExists(gameId) gameNotCompleted(gameId) onlyPlayer1(gameId) {
         Game storage game = games[gameId];
@@ -155,22 +154,44 @@ function joinGame(uint256 gameId) external gameExists(gameId) gameNotCompleted(g
         Game storage game = games[gameId];
         require(game.player2 != address(0), "Game does not have two players");
 
-        bool coinFlipResult = uint8(block.timestamp % 2) == 1;
+        // Collect data points for randomness
+        uint256 player1Timestamp = game.createdAt;   // Player 1's game creation timestamp
+        uint256 player2Timestamp = block.timestamp;  // Current block timestamp for Player 2
+        uint256 blockNumber = block.number;           // Current block number
+        bytes32 blockHash = blockhash(block.number - 1); // Block hash from the previous block
+
+        // Combine the data points and hash them for randomness (Now excluding msg.sender or player addresses)
+        uint256 combinedHash = uint256(keccak256(abi.encodePacked(
+            player1Timestamp, 
+            player2Timestamp, 
+            blockNumber, 
+            blockHash, 
+            gameId
+        )));
+
+        // Derive the coin flip result from the combined hash
+        bool coinFlipResult = (combinedHash % 2) == 1;
         bool didPlayer1Win = (coinFlipResult == game.player1Choice);
 
+        // Payout and treasury calculation
         IERC20 token = IERC20(game.tokenAddress);
         uint256 winnerPayout = game.betAmount * 190 / 100;
         uint256 treasuryAmount = game.betAmount * 10 / 100;
 
+        // Transfer payouts
         if (didPlayer1Win) {
             token.safeTransfer(game.player1, winnerPayout);
         } else {
             token.safeTransfer(game.player2, winnerPayout);
         }
 
+        // Transfer the treasury cut
         token.safeTransfer(treasury, treasuryAmount);
+
+        // Mark the game as completed
         game.isCompleted = true;
 
+        // Emit event for the resolution of the game
         emit GameResolved(gameId, didPlayer1Win ? game.player1 : game.player2, winnerPayout, treasuryAmount);
     }
 
