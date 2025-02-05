@@ -69,12 +69,15 @@ export const createGame = async (
       'function balanceOf(address owner) public view returns (uint256)',
     ], signer);
 
+    console.log('Token contract:', tokenContract);
     // Convert betAmount to the correct token decimals (18 decimals)
     const betAmountInWei = ethers.parseUnits(betAmount, 18);
-
+console.log('betAmountInWei:', betAmountInWei.toString());
     // Step 1: Check Player 1's balance to make sure they have enough tokens
     const balance = await tokenContract.balanceOf(await signer.getAddress());
     console.log('Player balance:', balance.toString());  // Log the balance to check if it returns a BigInt
+console.log('balance:', balance.toString());
+
     if (balance < (betAmountInWei)) {
       const errorMessage = 'Not enough tokens to create game';
       console.error(errorMessage);
@@ -153,12 +156,21 @@ export const joinGame = async (gameId: number) => {
     const currentNonce = await signer.getNonce();
     console.log('Current nonce:', currentNonce);
 
+
+
+
     // Send the transaction to join the game
     const tx = await contract.joinGame(gameId, { nonce: currentNonce });
-    await tx.wait();
-    console.log('Transaction sent! Hash:', tx.hash);
-    
+
+    const currentTime = Math.floor(Date.now() / 1000); // Convert to seconds
+const timeElapsed = currentTime - tx.startTime;
+
+if (timeElapsed < 20) {
+  alert(`Wait for ${20 - timeElapsed} more seconds before joining.`);
+  return;
+}
     const receipt = await tx.wait();
+     console.log('Transaction sent! Hash:', tx.hash);
     if (receipt.status === 1) {
       console.log(`Successfully joined game with ID: ${gameId}`);
       alert(`Successfully joined game with ID: ${gameId}`);
