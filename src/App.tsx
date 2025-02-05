@@ -9,6 +9,7 @@ import AddG from './components/AddG';
 import AvailableG from './components/AvailableG';
 import AllG from './components/AllG';
 import CancelG from './components/CancelG';
+import Cg from './components/Cg';
 
 
 
@@ -19,15 +20,8 @@ const App: React.FC = () => {
       {/* Header */}
 
       <Navbar/>
-      <CreateG/>
-      <AvailableG/>
-      <AllG/>
-       
-       <CancelG/>
-       
-        
-    
-
+      <Cg/>
+      
     </div>
   );
 };

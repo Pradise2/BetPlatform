@@ -1,7 +1,7 @@
 // src/FlipGame.ts
 
 import { ethers } from 'ethers';
-import { FLIP_GAME_ABI, FLIP_GAME_ADDRESS } from '../contracts/FlipContract';
+import { ABI, ADDRESS } from '../contracts/Contrac';
 
 export const SUPPORTED_TOKENS = {
   STABLEAI: '0x07F41412697D14981e770b6E335051b1231A2bA8',
@@ -16,20 +16,86 @@ export const SUPPORTED_TOKENS = {
 export const publicProvider = new ethers.JsonRpcProvider(
   'https://base-mainnet.infura.io/v3/b17a040a14bc48cfb3928a73d26f3617'
 );
-export const publicContract = new ethers.Contract(FLIP_GAME_ADDRESS, FLIP_GAME_ABI, publicProvider);
+export const publicContract = new ethers.Contract(ADDRESS, ABI, publicProvider);
 
 // Function to set up signer and contract for wallet interaction
 async function setupContractWithSigner() {
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
-    const contract = new ethers.Contract(FLIP_GAME_ADDRESS, FLIP_GAME_ABI, signer);
+    const contract = new ethers.Contract(ADDRESS, ABI, signer);
     return { signer, contract };
   } catch (error) {
     console.error('Error setting up contract with signer:', error);
     throw error;
   }
 }
+
+// Function to handle contract errors with additional info
+interface ContractError extends Error {
+  code?: string;
+  transaction?: any;
+  revert?: string;
+}
+
+function handleContractError(error: ContractError) {
+  if (error.code === 'CALL_EXCEPTION') {
+    console.error('Transaction data:', error.transaction);
+    if (error.revert) {
+      console.error('Revert reason:', error.revert);
+    }
+  } else if (error.code === 'ACTION_REJECTED') {
+    console.error('User rejected the action:', error);
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
+
+// Function to create a new game
+export const createGame = async (
+  tokenAddress: string, 
+  betAmount: string, 
+  player1Choice: boolean, // Add player1Choice parameter
+  timeoutDuration: string  // Add timeoutDuration parameter (in seconds)
+  ) => {
+  try {
+    const { signer, contract } = await setupContractWithSigner();
+
+    console.log('Creating game with amount:', betAmount, 'and token address:', tokenAddress);
+
+    // Create token contract instance
+    const tokenContract = new ethers.Contract(tokenAddress, [
+      'function approve(address spender, uint256 amount) public returns (bool)',
+      'function balanceOf(address owner) public view returns (uint256)',
+    ], signer);
+
+    // Convert betAmount to the correct token decimals (18 decimals)
+    const betAmountInWei = ethers.parseUnits(betAmount, 18);
+
+    // Step 1: Check Player 1's balance to make sure they have enough tokens
+    const balance = await tokenContract.balanceOf(await signer.getAddress());
+    console.log('Player balance:', balance.toString());  // Log the balance to check if it returns a BigInt
+    if (balance < (betAmountInWei)) {
+      const errorMessage = 'Not enough tokens to create game';
+      console.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    // Step 2: Approve the contract to spend the tokens
+    const approveTx = await tokenContract.approve(ADDRESS, betAmountInWei);
+    await approveTx.wait();
+    console.log('Token approved successfully.');
+
+    // Step 3: Call createGame to create the game
+    const tx = await contract.createGame(betAmountInWei, tokenAddress, player1Choice, timeoutDuration);
+    await tx.wait();
+    console.log('Game created successfully:', tx);
+
+  } catch (error) {
+    console.error('Error creating game:', error);
+    handleContractError(error as ContractError);
+  }
+};
 
 // Join an existing game
 export const joinGame = async (gameId: number) => {
@@ -79,7 +145,7 @@ export const joinGame = async (gameId: number) => {
     }
 
     // Step 2: Approve the contract to spend the tokens
-    const approveTx = await tokenContract.approve(FLIP_GAME_ADDRESS, game.betAmount);
+    const approveTx = await tokenContract.approve(ADDRESS, game.betAmount);
     await approveTx.wait();
     console.log('Token approved successfully.');
 
@@ -127,3 +193,4 @@ export async function cancelGame(gameId: number) {
     throw error;
   }
 }
+
